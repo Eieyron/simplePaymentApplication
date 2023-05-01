@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.db.models import Sum
 from django.core.exceptions import ValidationError
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .models import Payment, Currency
 
@@ -27,7 +27,9 @@ class PaymentSerializer(serializers.ModelSerializer):
         user_total_payment = Payment.objects.filter(**{
             'user':validated_data['user'],
             'currency':validated_data['currency'],
-        }).aggregate(Sum('amount'))['amount__sum'] or 0
+        }).filter(created_date__gt=temp_created_date-timedelta(days=1), created_date__lte=temp_created_date).aggregate(Sum('amount'))['amount__sum'] or 0
+
+        print("user total payment", user_total_payment)
 
         if (user_total_payment+validated_data['amount']) > 5000:
             raise serializers.ValidationError({
